@@ -1,12 +1,22 @@
 from abc import ABCMeta, abstractmethod
+from enum import Enum
 from nmigen.compat import *
 
 from ..gateware.pads import Pads
 
 
-__all__  = ["AccessArguments"]
-__all__ += ["AccessMultiplexer", "AccessMultiplexerInterface"]
-__all__ += ["AccessDemultiplexer", "AccessDemultiplexerInterface"]
+__all__  = [
+    "AccessArguments",
+    "AccessMultiplexer", "AccessMultiplexerInterface",
+    "AccessDemultiplexer", "AccessDemultiplexerInterface",
+    "AccessHint"
+]
+
+
+class AccessHint(Enum):
+    DEFAULT   = "default"
+    BANDWIDTH = "bandwidth"
+    LATENCY   = "latency"
 
 
 class AccessArguments(metaclass=ABCMeta):

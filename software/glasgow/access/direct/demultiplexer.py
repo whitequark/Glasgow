@@ -5,7 +5,7 @@ import asyncio
 from ...support.logging import *
 from ...support.chunked_fifo import *
 from ...support.task_queue import *
-from .. import AccessDemultiplexer, AccessDemultiplexerInterface
+from .. import AccessHint, AccessDemultiplexer, AccessDemultiplexerInterface
 
 
 # On Linux, the total amount of in-flight USB requests for the entire system is limited
@@ -137,9 +137,17 @@ class DirectDemultiplexer(AccessDemultiplexer):
 
 
 class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
-    def __init__(self, device, applet, mux_interface,
-                 read_buffer_size=None, write_buffer_size=None):
+    def __init__(self, device, applet, mux_interface, *,
+                 hint="default", read_buffer_size=None, write_buffer_size=None):
         super().__init__(device, applet)
+
+        hint = AccessHint(hint)
+        if hint in (AccessHint.DEFAULT, AccessHint.BANDWIDTH):
+            transfer_type = usb1.TRANSFER_TYPE_BULK
+        elif hint == AccessHint.LATENCY:
+            transfer_type = usb1.TRANSFER_TYPE_INTERRUPT
+        else:
+            assert False
 
         self._write_buffer_size = write_buffer_size
         self._read_buffer_size  = read_buffer_size
@@ -158,18 +166,28 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         assert self._pipe_num < len(interfaces)
         interface = interfaces[self._pipe_num]
 
-        settings = list(interface.iterSettings())
-        setting = settings[1] # alt-setting 1 has the actual endpoints
-        for endpoint in setting.iterEndpoints():
-            address = endpoint.getAddress()
-            packet_size = endpoint.getMaxPacketSize()
-            if address & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_IN:
-                self._endpoint_in = address
-                self._in_packet_size = packet_size
-            if address & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_OUT:
-                self._endpoint_out = address
-                self._out_packet_size = packet_size
-        assert self._endpoint_in != None and self._endpoint_out != None
+        self._alt_setting = None
+        for setting in interface.iterSettings():
+            self._endpoint_in  = None
+            self._endpoint_out = None
+            for endpoint in setting.iterEndpoints():
+                address = endpoint.getAddress()
+                attributes = endpoint.getAttributes()
+                packet_size = endpoint.getMaxPacketSize()
+                if (address & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_IN and
+                        attributes & usb1.TRANSFER_TYPE_MASK == transfer_type):
+                    self._endpoint_in = address
+                    self._in_packet_size = packet_size
+                if (address & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_OUT and
+                        attributes & usb1.TRANSFER_TYPE_MASK == transfer_type):
+                    self._endpoint_out = address
+                    self._out_packet_size = packet_size
+            if self._endpoint_in is not None and self._endpoint_out is not None:
+                self._alt_setting = setting.getAlternateSetting()
+                break
+        assert self._alt_setting is not None
+        self.logger.debug("FIFO: choosing alternate setting %d for access hint %s",
+                          self._alt_setting, hint.name)
 
         self._interface  = self.device.usb_handle.claimInterface(self._pipe_num)
         self._in_tasks   = TaskQueue()
@@ -193,7 +211,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         await self.device.write_register(self._addr_reset, 1)
 
         self.logger.trace("FIFO: synchronizing buffers")
-        self.device.usb_handle.setInterfaceAltSetting(self._pipe_num, 1)
+        self.device.usb_handle.setInterfaceAltSetting(self._pipe_num, self._alt_setting)
         self._in_buffer .clear()
         self._out_buffer.clear()
 

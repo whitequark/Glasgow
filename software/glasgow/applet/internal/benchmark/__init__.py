@@ -127,13 +127,17 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
         parser.add_argument(
             "-c", "--count", metavar="COUNT", type=int, default=1 << 23,
             help="transfer COUNT bytes (default: %(default)s)")
+        parser.add_argument(
+            "--hint", metavar="HINT", choices=("bandwidth", "latency"), default="default",
+            help="optimize interface for HINT")
 
         parser.add_argument(
             dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.__all_modes,
             help="run benchmark mode MODE (default: {})".format(" ".join(cls.__all_modes)))
 
     async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args=None)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args=None,
+                                                           hint=args.hint)
 
         golden = bytearray()
         while len(golden) < args.count:

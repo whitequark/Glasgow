@@ -53,37 +53,64 @@ usb_desc_device_qualifier_c usb_device_qualifier = {
 usb_desc_interface_c usb_interface_0_disabled =
   USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0,
                 /*iInterface=*/6);
-usb_desc_interface_c usb_interface_0_double =
+usb_desc_interface_c usb_interface_0_double_bulk =
   USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
                 /*iInterface=*/7);
-usb_desc_interface_c usb_interface_0_quad =
+usb_desc_interface_c usb_interface_0_quad_bulk =
   USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
                 /*iInterface=*/8);
+usb_desc_interface_c usb_interface_0_double_interrupt =
+  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/2, /*bNumEndpoints=*/2,
+                /*iInterface=*/9);
+usb_desc_interface_c usb_interface_0_quad_interrupt =
+  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/2, /*bNumEndpoints=*/2,
+                /*iInterface=*/10);
+
 usb_desc_interface_c usb_interface_1_disabled =
   USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0,
                 /*iInterface=*/6);
-usb_desc_interface_c usb_interface_1_double =
+usb_desc_interface_c usb_interface_1_double_bulk =
   USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
                 /*iInterface=*/7);
+usb_desc_interface_c usb_interface_1_double_interrupt =
+  USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/2, /*bNumEndpoints=*/2,
+                /*iInterface=*/9);
 
-#define USB_BULK_ENDPOINT(bEndpointAddress_)                                              \
+#define USB_ENDPOINT(bEndpointAddress_, bmAttributes_, wMaxPacketSize_, bInterval_)       \
   {                                                                                       \
     .bLength              = sizeof(struct usb_desc_endpoint),                             \
     .bDescriptorType      = USB_DESC_ENDPOINT,                                            \
     .bEndpointAddress     = bEndpointAddress_,                                            \
-    .bmAttributes         = USB_XFER_BULK,                                                \
-    .wMaxPacketSize       = 512,                                                          \
-    .bInterval            = 0,                                                            \
+    .bmAttributes         = bmAttributes_,                                                \
+    .wMaxPacketSize       = wMaxPacketSize_,                                              \
+    .bInterval            = bInterval_,                                                   \
   }
 
-usb_desc_endpoint_c usb_endpoint_2_out =
-  USB_BULK_ENDPOINT(/*bEndpointAddress=*/2|USB_DIR_OUT);
-usb_desc_endpoint_c usb_endpoint_4_out =
-  USB_BULK_ENDPOINT(/*bEndpointAddress=*/4|USB_DIR_OUT);
-usb_desc_endpoint_c usb_endpoint_6_in =
-  USB_BULK_ENDPOINT(/*bEndpointAddress=*/6|USB_DIR_IN );
-usb_desc_endpoint_c usb_endpoint_8_in =
-  USB_BULK_ENDPOINT(/*bEndpointAddress=*/8|USB_DIR_IN );
+usb_desc_endpoint_c usb_endpoint_2_out_bulk =
+  USB_ENDPOINT(/*bEndpointAddress=*/2|USB_DIR_OUT, /*bmAttributes=*/USB_XFER_BULK,
+               /*wMaxPacketSize=*/512, /*bInterval=*/0);
+usb_desc_endpoint_c usb_endpoint_4_out_bulk =
+  USB_ENDPOINT(/*bEndpointAddress=*/4|USB_DIR_OUT, /*bmAttributes=*/USB_XFER_BULK,
+               /*wMaxPacketSize=*/512, /*bInterval=*/0);
+usb_desc_endpoint_c usb_endpoint_6_in_bulk =
+  USB_ENDPOINT(/*bEndpointAddress=*/6|USB_DIR_IN , /*bmAttributes=*/USB_XFER_BULK,
+               /*wMaxPacketSize=*/512, /*bInterval=*/0);
+usb_desc_endpoint_c usb_endpoint_8_in_bulk =
+  USB_ENDPOINT(/*bEndpointAddress=*/8|USB_DIR_IN , /*bmAttributes=*/USB_XFER_BULK,
+               /*wMaxPacketSize=*/512, /*bInterval=*/0);
+
+usb_desc_endpoint_c usb_endpoint_2_out_interrupt =
+  USB_ENDPOINT(/*bEndpointAddress=*/2|USB_DIR_OUT, /*bmAttributes=*/USB_XFER_INTERRUPT,
+               /*wMaxPacketSize=*/512|USB_TX_3_PER_MICROFRAME, /*bInterval=*/1);
+usb_desc_endpoint_c usb_endpoint_4_out_interrupt =
+  USB_ENDPOINT(/*bEndpointAddress=*/4|USB_DIR_OUT, /*bmAttributes=*/USB_XFER_INTERRUPT,
+               /*wMaxPacketSize=*/512|USB_TX_3_PER_MICROFRAME, /*bInterval=*/1);
+usb_desc_endpoint_c usb_endpoint_6_in_interrupt =
+  USB_ENDPOINT(/*bEndpointAddress=*/6|USB_DIR_IN , /*bmAttributes=*/USB_XFER_INTERRUPT,
+               /*wMaxPacketSize=*/512|USB_TX_3_PER_MICROFRAME, /*bInterval=*/1);
+usb_desc_endpoint_c usb_endpoint_8_in_interrupt =
+  USB_ENDPOINT(/*bEndpointAddress=*/8|USB_DIR_IN , /*bmAttributes=*/USB_XFER_INTERRUPT,
+               /*wMaxPacketSize=*/512|USB_TX_3_PER_MICROFRAME, /*bInterval=*/1);
 
 usb_configuration_c usb_config_2_pipes = {
   {
@@ -96,14 +123,20 @@ usb_configuration_c usb_config_2_pipes = {
     .bMaxPower            = 250,
   },
   {
-    { .interface  = &usb_interface_0_disabled },
-    { .interface  = &usb_interface_0_double   },
-    { .endpoint   = &usb_endpoint_2_out       },
-    { .endpoint   = &usb_endpoint_6_in        },
-    { .interface  = &usb_interface_1_disabled },
-    { .interface  = &usb_interface_1_double   },
-    { .endpoint   = &usb_endpoint_4_out       },
-    { .endpoint   = &usb_endpoint_8_in        },
+    { .interface  = &usb_interface_0_disabled         },
+    { .interface  = &usb_interface_0_double_bulk      },
+    { .endpoint   = &usb_endpoint_2_out_bulk          },
+    { .endpoint   = &usb_endpoint_6_in_bulk           },
+    { .interface  = &usb_interface_0_double_interrupt },
+    { .endpoint   = &usb_endpoint_2_out_interrupt     },
+    { .endpoint   = &usb_endpoint_6_in_interrupt      },
+    { .interface  = &usb_interface_1_disabled         },
+    { .interface  = &usb_interface_1_double_bulk      },
+    { .endpoint   = &usb_endpoint_4_out_bulk          },
+    { .endpoint   = &usb_endpoint_8_in_bulk           },
+    { .interface  = &usb_interface_1_double_interrupt },
+    { .endpoint   = &usb_endpoint_4_out_interrupt     },
+    { .endpoint   = &usb_endpoint_8_in_interrupt      },
     { 0 }
   }
 };
@@ -119,10 +152,13 @@ usb_configuration_c usb_config_1_pipe = {
     .bMaxPower            = 250,
   },
   {
-    { .interface  = &usb_interface_0_disabled },
-    { .interface  = &usb_interface_0_quad     },
-    { .endpoint   = &usb_endpoint_2_out       },
-    { .endpoint   = &usb_endpoint_6_in        },
+    { .interface  = &usb_interface_0_disabled       },
+    { .interface  = &usb_interface_0_quad_bulk      },
+    { .endpoint   = &usb_endpoint_2_out_bulk        },
+    { .endpoint   = &usb_endpoint_6_in_bulk         },
+    { .interface  = &usb_interface_0_quad_interrupt },
+    { .endpoint   = &usb_endpoint_2_out_interrupt   },
+    { .endpoint   = &usb_endpoint_6_in_interrupt    },
     { 0 }
   }
 };
@@ -146,8 +182,10 @@ usb_ascii_string_c usb_strings[] = {
   [4] = "Pipe P at {4x512B EP2OUT/EP6IN}",
   // Interfaces
   [5] = "Disabled",
-  [6] = "Double-buffered 512B",
-  [7] = "Quad-buffered 512B",
+  [6] = "Double-buffered 512B BULK",
+  [7] = "Quad-buffered 512B BULK",
+  [8] = "Double-buffered 512B INTERRUPT",
+  [9] = "Quad-buffered 512B INTERRUPT",
 };
 
 usb_descriptor_set_c usb_descriptor_set = {
